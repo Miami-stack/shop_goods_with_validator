@@ -1,13 +1,33 @@
 import json
+import os
+import sys
+
 import jsonschema
 
 
-with open("goods.schema.json") as e:
-    data = json.load(e)
+def default_json(file: str):
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+    file_path = os.path.join(base_dir, file)
+    with open(file_path) as f:
+        data = json.load(f)
+        return data
 
-for i in data['examples']:
-    print(i)
-    print(i['name'], i['package_params']['width'], i['package_params']['height'])
-    for j in i['location_and_quantity']:
-        print(j)
 
+def check_input_json(file: str):
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+    file_path = os.path.join(base_dir, file)
+    if os.path.splitext(file_path)[1] == '.json':
+        with open(file_path) as e:
+            data = json.load(e)
+            return data
+    else:
+        print('Это не json файл')
+        sys.exit(0)
+
+
+schema = default_json('goods.schema.json')
+input_data = check_input_json('file.json')
+
+valid = jsonschema.validate(input_data, schema)
+
+print(input_data, valid)
