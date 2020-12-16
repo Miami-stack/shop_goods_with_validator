@@ -2,7 +2,7 @@
 import json
 import os
 import sys
-
+import sqlite3
 import jsonschema
 
 
@@ -35,8 +35,6 @@ def validation_json(data: dict, data2: dict) -> str:
         return "Json валидный"
     except jsonschema.exceptions.ValidationError:
         return "Json невалидный"
-    except json.decoder.JSONDecodeError:
-        return "Json невалидный"
 
 
 def add_values(data: dict):
@@ -48,8 +46,30 @@ def add_values(data: dict):
     return goods, shop_goods
 
 
+def database(a_ , b_):
+    conn = sqlite3.connect('task.db')
+    c = conn.cursor()
+    c.executescript(
+        """create table if not exists goods 
+                        (id int unique not null primary key, name varchar not null, 
+                        package_height float not null, package_width float not null);""")
+
+    c.executescript("""create table if not exists shops_goods 
+                        (id serial not null, id_good int unique not null references goods (id) unique, 
+                        location varchar not null, amount int not null);;""")
+
+    c.executemany("Insert into goods (id, name, package_width, package_height) values(?, ?, ?, ?);", (i for i in a_))
+
+    c.executemany("Insert into shops_goods (id_good, location, amount) values(?, ?, ?);", (j for j in b_))
+
+    conn.commit()
+    conn.close()
+
+
 input_data = input_json('file.json')
 schema = default_json('goods.schema.json')
+goods_items_, shops_items_ = add_values(input_data)
 
-goods, shoops = add_values(input_data)
-print(input_data, '\n', validation_json(input_data, schema), '\n', t, v)
+print(input_data, '\n', validation_json(input_data, schema), '\n', goods_items_, shops_items_,
+      '\n', database(goods_items_, shops_items_))
+
