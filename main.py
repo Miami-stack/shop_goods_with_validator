@@ -28,7 +28,7 @@ def input_json(file: str) -> dict:
         sys.exit(0)
 
 
-def validation_json(data: dict, data2: dict):
+def validation_json(data: dict, data2: dict) -> str:
     """Эта функция валидирует поданный json со схемой."""
     try:
         jsonschema.validate(data, data2)
@@ -39,6 +39,17 @@ def validation_json(data: dict, data2: dict):
         return "Json невалидный"
 
 
+def add_values(data: dict):
+    goods = [data['id'], data['name'], data['package_params']['width'], data['package_params']['height']]
+    shop_goods = []
+    for i in data['location_and_quantity']:
+        shop_goods.append(i['location'])
+        shop_goods.append(i['amount'])
+    return goods, shop_goods
+
+
 input_data = input_json('file.json')
 schema = default_json('goods.schema.json')
-print(validation_json(input_data, schema))
+
+goods, shoops = add_values(input_data)
+print(input_data, '\n', validation_json(input_data, schema), '\n', t, v)
