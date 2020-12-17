@@ -2,7 +2,7 @@
 import json
 import os
 import sys
-import sqlite3
+import psycopg2
 import jsonschema
 
 
@@ -43,33 +43,43 @@ def add_values(data: dict):
     for i in data['location_and_quantity']:
         shop_goods.append(i['location'])
         shop_goods.append(i['amount'])
-    return goods, shop_goods
-
-
-def database(a_ , b_):
-    conn = sqlite3.connect('task.db')
-    c = conn.cursor()
-    c.executescript(
-        """create table if not exists goods 
-                        (id int unique not null primary key, name varchar not null, 
-                        package_height float not null, package_width float not null);""")
-
-    c.executescript("""create table if not exists shops_goods 
-                        (id serial not null, id_good int unique not null references goods (id) unique, 
-                        location varchar not null, amount int not null);;""")
-
-    c.executemany("Insert into goods (id, name, package_width, package_height) values(?, ?, ?, ?);", (i for i in a_))
-
-    c.executemany("Insert into shops_goods (id_good, location, amount) values(?, ?, ?);", (j for j in b_))
-
-    conn.commit()
-    conn.close()
+    return tuple(goods), tuple(shop_goods)
 
 
 input_data = input_json('file.json')
 schema = default_json('goods.schema.json')
-goods_items_, shops_items_ = add_values(input_data)
+goods_items, shops_items = add_values(input_data)
 
-print(input_data, '\n', validation_json(input_data, schema), '\n', goods_items_, shops_items_,
-      '\n', database(goods_items_, shops_items_))
+print(input_data, '\n', validation_json(input_data, schema), '\n', goods_items, shops_items,
+      '\n')
 
+conn = psycopg2.connect(dbname='postgres', host='localhost')
+c = conn.cursor()
+c.executescript(
+    """create table if not exists goods
+                    (id int unique not null primary key, name varchar not null,
+                    package_height float not null, package_width float not null);""")
+
+c.executescript("""create table if not exists shops_goods
+                    (id serial not null, id_good int unique not null references goods (id) unique,
+                    location varchar not null, amount int not null);""")
+
+c.execute( f"""INSERT OR IGNORE INTO goods (id, name, package_width, package_height) 
+                    values {goods_items} UPDATE goods set  name = excluded.name, package_width = 
+                    excluded.package_width, package_height = excluded.package_height;""")
+
+c.execute(f"""INSERT OR IGNORE INTO shops_goods (id_good, location, amount) values {shops_items}
+                    ON CONFLICT(id_good) do update
+                    set
+                    location = excluded.location,
+                    amount = excluded.amount;""")
+
+conn.commit()
+conn.close()
+
+# input_data = input_json('file.json')
+# schema = default_json('goods.schema.json')
+# goods_items, shops_items = add_values(input_data)
+#
+# print(input_data, '\n', validation_json(input_data, schema), '\n', goods_items, shops_items,
+#       '\n')
