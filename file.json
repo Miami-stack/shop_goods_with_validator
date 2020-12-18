@@ -1,5 +1,5 @@
 {
-            "id": 123,
+            "id": 23,
             "name": "Телевизор",
             "package_params": {
                 "width": 5,
@@ -7,12 +7,8 @@
             },
             "location_and_quantity": [
                 {
-                    "location": "Магазин на Ленина",
+                    "location": "Магазин в Казани",
                     "amount": 7
-                },
-                {
-                    "location": "Магазин в центре",
-                    "amount": 3
                 }
             ]
 }
